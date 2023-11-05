@@ -10,10 +10,20 @@ const FEN_POSITION =
     "rnbqkb1r/pp1p1ppp/2p2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 2 4";
 
 export default function App() {
+    const onBestMove = (bestMove) => {
+        setBestMove(bestMove);
+    }
+
+    const onEvaluation = (newEval) => {
+        setEvaluation(newEval);
+    }
+
     const [game, setGame] = useState(new Chess());
+    const [fen, setFen] = useState("");
     const [fenInput, setFenInput] = useState("");
-    const [evaluation, setEvaluation] = useState();
-    const { evaluatePosition, getEval, stop } = Engine();
+    const [evaluation, setEvaluation] = useState("0");
+    const [bestMove, setBestMove] = useState("null");
+    const { evaluatePosition, getEval, stop } = Engine({onBestMove, onEvaluation});
 
     useEffect(()=> {
 
@@ -21,6 +31,7 @@ export default function App() {
             stop();
         }
     }, [game]);
+
 
     function onDrop(sourceSquare, targetSquare) {
         const move = {
@@ -37,8 +48,14 @@ export default function App() {
             return false;
         }
 
+        setFen(game.fen());
+
         evaluatePosition(game.fen());
         return true;
+    }
+
+    const changEval = (newEval) => {
+        setEvaluation(newEval);
     }
 
     function handleFenChange(event) {
@@ -72,7 +89,15 @@ export default function App() {
                 </div>
                 <div>
                     <h3>Evaluation</h3>
-                    <p>{getEval()}</p>
+                    <p>{evaluation}</p>
+                </div>
+                <div>
+                    <h3>Best Move</h3>
+                    <p>{bestMove}</p>
+                </div>
+                <div>
+                    <h3>FEN</h3>
+                    <p>{fen}</p>
                 </div>
             </div>
         </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 // Wrapper around stockfish
-function Engine() {
+function Engine({ onBestMove, onEvaluation }) {
     const [stockfish, setStockfish] = useState();
     const [fen, setFen] = useState();
     const [data, setData] = useState();
@@ -11,18 +11,22 @@ function Engine() {
     const handleMessage = (e) => {
         setData(e["data"]);
         // TODO parser would be nice but overkill
-        const bm_regex = /best move (\S+)/;
+        const bm_regex = /bestmove .*/;
         const eval_regex = /score cp (-?\d+)/;
 
         const bm_match = e["data"].match(bm_regex);
         const eval_match = e["data"].match(eval_regex);
 
+        console.log("[Engine::handleMessage]: full data: ", e["data"]);
+
         if (bm_match) {
             console.log("Found best move: ", bm_match);
+            onBestMove(bm_match);
         }
 
         if (eval_match) {
             console.log("eval: ", eval_match[1]);
+            onEvaluation(eval_match[1]);
         }
 
         // console.log("[debug] e[data]: ", e["data"]);
