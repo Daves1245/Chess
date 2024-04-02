@@ -1,0 +1,18 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // or "mysql", "sqlite", etc.
+  url      = env("DATABASE_URL")
+}
+
+model Puzzle {
+  id              String   @id @default(uuid()) // Unique identifier for the puzzle
+  fen             String   // FEN notation for the chess position
+  moves           String[] // List of moves in SAN or UCI notation
+  rating          Int      // Puzzle rating
+  ratingDeviation Int      // Deviation for rating confidence
+  themes          String[] // List of themes (e.g., "fork", "pin", etc.)
+  gameUrl         String   // Link to the original game
+}

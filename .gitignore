@@ -43,3 +43,6 @@ next-env.d.ts
 # vim
 *.swp
 *.swo
+
+# lichess database
+db/

@@ -1,5 +1,4 @@
 import React from 'react';
-import Image from 'next/image';
 
 const Leaderboard = () => {
   // Sample data - in a real app this would come from props or an API
@@ -12,14 +11,9 @@ const Leaderboard = () => {
     { rank: 5, name: "Eve", rating: 1850 }
   ];
 
-  const handleLogin = () => {
-    // TODO: Implement Lichess OAuth login
-    console.log('Login clicked');
-  };
-
   return (
     <div className="h-full w-full p-4 text-white">
-      {/* Header with Login */}
+      {/* Header */}
       <div className="flex justify-between items-start mb-8">
         <div>
           <div className="text-6xl font-bold text-indigo-400">
@@ -29,20 +23,6 @@ const Leaderboard = () => {
             Current Rating
           </div>
         </div>
-        
-        <button 
-          onClick={handleLogin}
-          className="flex items-center gap-2 bg-[#4b4b4b] hover:bg-[#5a5a5a] px-4 py-2 rounded-md transition-colors"
-        >
-          <Image
-            src="/lichess.svg"
-            alt="Lichess"
-            width={20}
-            height={20}
-            className="text-white"
-          />
-          <span>Login</span>
-        </button>
       </div>
 
       {/* Leaderboard */}

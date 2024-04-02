@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function Settings({ onSkip, onShowHint, onShowSolution, onSetCustomPosition }) {
+export default function Settings({ onNextPuzzle, onShowHint, onShowSolution, onSetCustomPosition }) {
   const [fen, setFen] = useState("");
 
   const handleFenChange = (e) => {
@@ -19,7 +19,7 @@ export default function Settings({ onSkip, onShowHint, onShowSolution, onSetCust
     <div className="flex flex-col w-full gap-4 p-4 text-white">
       {/* Skip / Next Puzzle */}
       <button
-        onClick={onSkip}
+        onClick={onNextPuzzle}
         className="bg-indigo-600 hover:bg-indigo-700 p-3 rounded-md transition-colors"
       >
          Next Puzzle

@@ -6,22 +6,28 @@ export type AppState =
     leaderBoard: Leaderboard,
   };
 
-interface User {
+export interface User {
   handle: string;
 }
 
-interface Puzzle {
-  id: string;
+export interface Puzzle {
+  puzzle_id: string;
   fen: string;
-  solution: string;
-  rating: string;
+  moves: string;
+  rating: number;
+  rating_deviation: number;
+  popularity: number;
+  nb_plays: number;
+  themes: string;
+  game_url: string;
+  opening_tags: string | null; // Since some entries might be empty
 }
 
-interface Leaderboard {
+export interface Leaderboard {
   board: Placement[];
 }
 
-interface Placement {
+export interface Placement {
   handle: string;
   score: number;
 }

@@ -1,0 +1,21 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model puzzles {
+  puzzle_id        String  @id @db.VarChar
+  fen              String
+  moves            String
+  rating           Int?
+  rating_deviation Int?
+  popularity       Int?
+  nb_plays         Int?
+  themes           String?
+  game_url         String?
+  opening_tags     String?
+}

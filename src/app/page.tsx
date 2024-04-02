@@ -4,14 +4,44 @@ import React from "react";
 import ChessGame from "@/components/ChessGame";
 import Leaderboard from "@/components/Leaderboard";
 import Settings from "@/components/Settings";
-import { Ctrl } from "./ctrl";
+import { Puzzle } from '@/types';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
 
-  const ctrl = new Ctrl(() => {});
+  const [puzzle, setPuzzle] = useState<Puzzle | null>();
+  const [error, setError] = useState<string | null>('');
 
-  const onSkip = ()=> {
+  useEffect(() => {
+    const initPuzzle = async ()=> {
+      try {
+        setError(null);
+        const res = await fetch('/api/puzzle', { method: 'GET' });
 
+        if (!res.ok) {
+          throw new Error(await res.json() || "Failed to fetch puzzle");
+        }
+        
+        const data = await res.json();
+        setPuzzle(data);
+      } catch (error: unknown) {
+        setError(error instanceof Error ? error.message : 'Unknown error');
+        console.error("Error fetching puzzle: ", error);
+      }
+    }
+
+    initPuzzle();
+  }, []);
+
+  const onNextPuzzle = async ()=> {
+    try {
+      const res = await fetch('/api/puzzle');
+      const data = await res.json();
+      setPuzzle(data);
+      console.log("puzzle: ", data);
+    } catch (error: unknown) {
+      console.error("Error fetching puzzle: ", error);
+    }
   }
 
   const onShowHint = ()=> {
@@ -26,11 +56,6 @@ export default function Home() {
 
   }
 
-  const onLogin = ()=> {
-    ctrl.init();
-    ctrl.login();
-  }
-
   return (
     <div className="flex flex-col h-screen w-screen bg-gray-900 overflow-hidden">
       {/* Header */}
@@ -43,7 +68,9 @@ export default function Home() {
         {/* Chessboard Container */}
         <div className="flex-1 bg-gray-800 rounded-lg shadow-lg flex justify-center w-full h-full w-max-full h-max-full overflow-hidden min-w-0 min-h-0 border border-gray-700">
           <div className="aspect-square w-[80%] h-[80%] min-w-0 min-h-0">
-            <ChessGame />
+            <ChessGame
+              puzzle={puzzle}
+            />
           </div>
         </div>
 
@@ -57,11 +84,10 @@ export default function Home() {
           {/* Settings */}
           <div className="flex-1 bg-gray-800 rounded-lg shadow-lg flex items-center justify-center overflow-hidden min-w-0 min-h-0 border border-gray-700">
             <Settings
-              onSkip={onSkip}
+              onNextPuzzle={onNextPuzzle}
               onShowHint={onShowHint}
               onShowSolution={onShowSolution}
               onSetCustomPosition={onSetCustomPosition}
-              onLogin={onLogin}
             />
           </div>
         </div>
