@@ -4,13 +4,21 @@ import React from "react";
 import ChessGame from "@/components/ChessGame";
 import Leaderboard from "@/components/Leaderboard";
 import Settings from "@/components/Settings";
-import { Puzzle } from '@/types';
+import { Puzzle, Placement } from '@/types';
 import { useState, useEffect } from 'react';
 
 export default function Home() {
 
-  const [puzzle, setPuzzle] = useState<Puzzle | null>();
+  const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [error, setError] = useState<string | null>('');
+  const [rating, setRating] = useState<number>(0);
+  const [placements, setPlacements] = useState<Placement[]>([
+    { handle: "Alice", score: 2100 },
+    { handle: "Bob", score: 2050 },
+    { handle: "Charlie", score: 1950 },
+    { handle: "Diana", score: 1900 },
+    { handle: "Eve", score: 1850 }
+  ]);
 
   useEffect(() => {
     const initPuzzle = async ()=> {
@@ -21,9 +29,12 @@ export default function Home() {
         if (!res.ok) {
           throw new Error(await res.json() || "Failed to fetch puzzle");
         }
-        
+
         const data = await res.json();
         setPuzzle(data);
+        if (data.rating) {
+          setRating(data.rating);
+        }
       } catch (error: unknown) {
         setError(error instanceof Error ? error.message : 'Unknown error');
         console.error("Error fetching puzzle: ", error);
@@ -38,6 +49,9 @@ export default function Home() {
       const res = await fetch('/api/puzzle');
       const data = await res.json();
       setPuzzle(data);
+      if (data.rating) {
+        setRating(data.rating);
+      }
       console.log("puzzle: ", data);
     } catch (error: unknown) {
       console.error("Error fetching puzzle: ", error);
@@ -66,8 +80,8 @@ export default function Home() {
       {/* Main Content */}
       <div className="flex-1 p-5 overflow-hidden flex gap-5 bg-gray-900 min-w-0 min-h-0">
         {/* Chessboard Container */}
-        <div className="flex-1 bg-gray-800 rounded-lg shadow-lg flex justify-center w-full h-full w-max-full h-max-full overflow-hidden min-w-0 min-h-0 border border-gray-700">
-          <div className="aspect-square w-[80%] h-[80%] min-w-0 min-h-0">
+        <div className="flex-1 bg-gray-800 flex items-center justify-center w-full h-full overflow-hidden min-w-0 min-h-0 border border-gray-700 p-2">
+          <div className="w-full h-full max-w-[75vh] max-h-[75vh]">
             <ChessGame
               puzzle={puzzle}
             />
@@ -78,7 +92,10 @@ export default function Home() {
         <div className="flex flex-col flex-1 gap-5 overflow-hidden min-w-0 min-h-0">
           {/* Leaderboard */}
           <div className="flex-1 bg-gray-800 rounded-lg shadow-lg flex items-center justify-center overflow-hidden min-w-0 min-h-0 border border-gray-700">
-            <Leaderboard />
+            <Leaderboard 
+              rating={rating}
+              placements={placements}
+            />
           </div>
 
           {/* Settings */}
@@ -95,7 +112,6 @@ export default function Home() {
 
       {/* Footer */}
       <div className="h-[10vh] bg-gray-800 flex items-center justify-center border-t border-gray-700">
-        <span className="text-gray-400">© 2024 Anti-puzzles</span>
       </div>
     </div>
   );

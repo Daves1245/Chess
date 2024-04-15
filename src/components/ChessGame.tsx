@@ -11,68 +11,55 @@ interface ChessGameProps {
 
 export default function ChessGame({ puzzle }: ChessGameProps) {
   const [game, setGame] = useState<Chess>(new Chess());
-  const [moveIndex, setMoveIndex] = useState<number>(0);
+  const [moveIdx, setMoveIndex] = useState<number>(0);
   const [orientation, setOrientation] = useState<"white" | "black">("white");
 
   useEffect(() => {
+    let newGame;
     if (puzzle) {
-      const initialFen = puzzle.fen || "start";
-      const newGame = new Chess(initialFen);
-      setGame(newGame);
-      setMoveIndex(0);
+      console.log(`initial fen: '${puzzle.fen}'`);
+      newGame = new Chess(puzzle.fen);
 
-      const isWhiteToMove = initialFen.split(' ')[1] === 'w';
-      setOrientation(isWhiteToMove ? "white" : "black");
+      const whiteToMove = puzzle.fen.split(' ')[1] === 'w';
+      setOrientation(whiteToMove ? "white" : "black");
+    } else {
+      console.log('Using starting position');
+      newGame = new Chess();
     }
+    setGame(newGame);
+    setMoveIndex(0);
   }, [puzzle]);
 
-  const onDrop = (sourceSquare: string, targetSquare: string) => {
+  const onDrop = (src: string, target: string) => {
     if (!puzzle || !game) return false;
 
-    const movesArray = puzzle.moves.split(' ');
+    const moves = puzzle.moves.split(' ');
 
-    if (moveIndex >= movesArray.length) {
+    if (moveIdx >= moves.length) {
       console.log("Puzzle completed!");
       return false;
     }
 
-    const expectedUserMove = movesArray[moveIndex];
-    const userMoveUci = sourceSquare + targetSquare;
-    if (!expectedUserMove.startsWith(userMoveUci)) {
-      console.log("Invalid move. Expected move:", expectedUserMove);
+    const expectedUserMove = moves[moveIdx];
+    const userMoveUci = src + target;
+    if (expectedUserMove !== userMoveUci) {
+      console.log(`Invalid move ${userMoveUci}. Expected move: ${expectedUserMove}`);
       return false;
     }
-
-    const promotion = expectedUserMove.length > 4 ? expectedUserMove[4] : undefined;
 
     const newGame = new Chess(game.fen());
     const userMove = newGame.move({
-      from: sourceSquare,
-      to: targetSquare,
-      promotion: promotion
+      from: src,
+      to: target,
     });
 
-    if (userMove === null) {
-      console.error("illegal move");
-      return false;
-    }
+    let newMoveIndex = moveIdx + 1;
 
-    let newMoveIndex = moveIndex + 1;
-
-    if (newMoveIndex < movesArray.length) {
-      const computerMoveUci = movesArray[newMoveIndex];
-      const from = computerMoveUci.substring(0, 2);
-      const to = computerMoveUci.substring(2, 4);
-      const compPromotion = computerMoveUci.length > 4 ? computerMoveUci[4] : undefined;
-
-      const computerMove = newGame.move({
-        from: from,
-        to: to,
-        promotion: compPromotion
-      });
-
+    if (newMoveIndex < moves.length) {
+      const computerMoveUci = moves[newMoveIndex];
+      const computerMove = newGame.move(computerMoveUci);
       if (computerMove === null) {
-        console.error("illegal move, shouldn't be possible");
+        console.error("Impossible move");
         return false;
       }
       newMoveIndex++;
@@ -84,20 +71,18 @@ export default function ChessGame({ puzzle }: ChessGameProps) {
   };
 
   return (
-    <div className="h-full w-full">
-      <Chessboard
-        position={game.fen()}
-        onPieceDrop={onDrop}
-        boardOrientation={orientation}
-        customBoardStyle={{
-          borderRadius: "10px",
-          boxShadow: "0 5px 15px rgba(0, 0, 0, 0.5)",
-        }}
-        animationDuration={500}
-        boardWidth={400}
-        areArrowsAllowed={true}
-        showBoardNotation={true}
-      />
+    <div className="h-full w-full flex items-center justify-center p-4">
+      <div className="w-full h-full max-w-[95%] max-h-[95%]">
+        <Chessboard
+          position={game.fen()}
+          onPieceDrop={onDrop}
+          boardOrientation={orientation}
+          animationDuration={500}
+          id="responsive-chessboard"
+          areArrowsAllowed={true}
+          showBoardNotation={true}
+        />
+      </div>
     </div>
   );
 }

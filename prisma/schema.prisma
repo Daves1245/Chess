@@ -19,3 +19,9 @@ model puzzles {
   game_url         String?
   opening_tags     String?
 }
+
+model scores {
+  id     Int    @id @default(autoincrement())
+  handle String
+  score  Int
+}
