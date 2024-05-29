@@ -1,5 +1,3 @@
-import Papa from 'papaparse';
-import { Puzzle } from '@/types';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();

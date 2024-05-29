@@ -21,7 +21,8 @@ model puzzles {
 }
 
 model scores {
-  id     Int    @id @default(autoincrement())
-  handle String
-  score  Int
+  id         Int    @id @default(autoincrement())
+  handle     String
+  score      Int
+  high_score Int    @default(0)
 }

@@ -1,88 +1,156 @@
-import { HttpClient, OAuth2AuthCodePKCE } from '@bity/oauth2-auth-code-pkce';
-import { readStream } from '@/app/ndJsonStream';
-import { BASE_PATH } from './routing';
-
 export const lichessHost = 'https://lichess.org';
-// export const lichessHost = 'http://l.org';
-export const scopes = ['board:play'];
-export const clientId = 'lichess-api-demo';
-export const clientUrl = `${location.protocol}//${location.host}${BASE_PATH || '/'}`;
+export const scopes = ['challenge:read', 'challenge:write', 'puzzle:read'];
+export const clientId = 'example-app';
+export const clientUrl = 'http://localhost:3000';
 
-export interface Me {
+interface TokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
+interface UserData {
   id: string;
   username: string;
-  httpClient: HttpClient; // with pre-set Authorization header
-  perfs: { [key: string]: any };
+  [key: string]: unknown;
 }
 
 export class Auth {
-  oauth = new OAuth2AuthCodePKCE({
-    authorizationUrl: `${lichessHost}/oauth`,
-    tokenUrl: `${lichessHost}/api/token`,
-    clientId,
-    scopes,
-    redirectUrl: clientUrl,
-    onAccessTokenExpiry: refreshAccessToken => refreshAccessToken(),
-    onInvalidGrant: console.warn,
-  });
-  me?: Me;
+  private static instance: Auth;
+  private accessToken: string | null = null;
+  private tokenType: string | null = null;
+  private expiresAt: number | null = null;
 
-  async init() {
+  private constructor() {}
+
+  public static init(): Auth {
+    if (!Auth.instance) {
+      Auth.instance = new Auth();
+    }
+    return Auth.instance;
+  }
+
+  public async login(): Promise<void> {
     try {
-      const accessContext = await this.oauth.getAccessToken();
-      if (accessContext) await this.authenticate();
-    } catch (err) {
-      console.error(err);
-    }
-    if (!this.me) {
-      try {
-        const hasAuthCode = await this.oauth.isReturningFromAuthServer();
-        if (hasAuthCode) await this.authenticate();
-      } catch (err) {
-        console.error(err);
-      }
+      const codeVerifier = this.generateRandomString();
+      const codeChallenge = await this.generateCodeChallenge(codeVerifier);
+      const state = this.generateRandomString();
+
+      localStorage.setItem('code_verifier', codeVerifier);
+      localStorage.setItem('state', state);
+
+      const authUrl = new URL(`${lichessHost}/oauth`);
+      authUrl.searchParams.append('response_type', 'code');
+      authUrl.searchParams.append('client_id', clientId);
+      authUrl.searchParams.append('redirect_uri', clientUrl);
+      authUrl.searchParams.append('code_challenge_method', 'S256');
+      authUrl.searchParams.append('code_challenge', codeChallenge);
+      authUrl.searchParams.append('state', state);
+      authUrl.searchParams.append('scope', scopes.join(' '));
+
+      window.location.href = authUrl.toString();
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
   }
 
-  async login() {
-    await this.oauth.fetchAuthorizationCode();
-  }
+  public async handleCallback(code: string, state: string): Promise<UserData> {
+    const storedState = localStorage.getItem('state');
+    const codeVerifier = localStorage.getItem('code_verifier');
 
-  async logout() {
-    if (this.me) await this.me.httpClient(`${lichessHost}/api/token`, { method: 'DELETE' });
-    localStorage.clear();
-    this.me = undefined;
-  }
-
-  private authenticate = async () => {
-    const httpClient = this.oauth.decorateFetchHTTPClient(window.fetch);
-    const res = await httpClient(`${lichessHost}/api/account`);
-    const me = {
-      ...(await res.json()),
-      httpClient,
-    };
-    if (me.error) throw me.error;
-    this.me = me;
-  };
-
-  openStream = async (path: string, config: any, handler: (_: any) => void) => {
-    const stream = await this.fetchResponse(path, config);
-    return readStream(`STREAM ${path}`, stream, handler);
-  };
-
-  fetchBody = async (path: string, config: any = {}) => {
-    const res = await this.fetchResponse(path, config);
-    const body = await res.json();
-    return body;
-  };
-
-  private fetchResponse = async (path: string, config: any = {}) => {
-    const res = await (this.me?.httpClient || window.fetch)(`${lichessHost}${path}`, config);
-    if (res.error || !res.ok) {
-      const err = `${res.error} ${res.status} ${res.statusText}`;
-      alert(err);
-      throw err;
+    if (!storedState || !codeVerifier || storedState !== state) {
+      throw new Error('Invalid state parameter');
     }
-    return res;
-  };
+
+    try {
+      const tokenResponse = await this.exchangeCodeForToken(code, codeVerifier);
+      this.accessToken = tokenResponse.access_token;
+      this.tokenType = tokenResponse.token_type;
+      this.expiresAt = Date.now() + tokenResponse.expires_in * 1000;
+
+      const userData = await this.fetchUserData();
+      return userData;
+    } catch (error) {
+      console.error('Callback handling error:', error);
+      throw error;
+    }
+  }
+
+  private async exchangeCodeForToken(code: string, codeVerifier: string): Promise<TokenResponse> {
+    const tokenUrl = `${lichessHost}/api/token`;
+    const body = new URLSearchParams();
+    body.append('grant_type', 'authorization_code');
+    body.append('code', code);
+    body.append('code_verifier', codeVerifier);
+    body.append('redirect_uri', clientUrl);
+    body.append('client_id', clientId);
+
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Token exchange failed: ${response.statusText}`);
+    }
+
+    return await response.json() as TokenResponse;
+  }
+
+  private async fetchUserData(): Promise<UserData> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated');
+    }
+
+    const response = await fetch(`${lichessHost}/api/account`, {
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch user data: ${response.statusText}`);
+    }
+
+    return await response.json() as UserData;
+  }
+
+  public logout(): void {
+    this.accessToken = null;
+    this.tokenType = null;
+    this.expiresAt = null;
+    localStorage.removeItem('code_verifier');
+    localStorage.removeItem('state');
+  }
+
+  private generateRandomString(): string {
+    const array = new Uint8Array(32);
+    window.crypto.getRandomValues(array);
+    return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  private async generateCodeChallenge(verifier: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(verifier);
+    const digest = await window.crypto.subtle.digest('SHA-256', data);
+    
+    return btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+  }
 }
+
+export const login = async (): Promise<void> => {
+  const auth = Auth.init();
+  await auth.login();
+};
+
+export const logout = (): void => {
+  const auth = Auth.init();
+  auth.logout();
+};

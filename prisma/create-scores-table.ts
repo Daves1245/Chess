@@ -15,12 +15,13 @@ async function main() {
     
     // @ts-ignore
     if (!tableExists[0].exists) {
-      // Create the scores table
+      // Create the scores table with the new "high_score" column added
       await prisma.$executeRaw`
         CREATE TABLE "scores" (
           "id" SERIAL PRIMARY KEY,
           "handle" TEXT NOT NULL,
-          "score" INTEGER NOT NULL
+          "score" INTEGER NOT NULL,
+          "high_score" INTEGER NOT NULL DEFAULT 0
         );
       `;
       console.log('Scores table created successfully');

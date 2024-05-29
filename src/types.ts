@@ -1,10 +1,20 @@
-export type AppState =
-  | { type: "loggedOut" }
-  | { type: "loggedIn",
-    user: User,
-    puzzle: Puzzle,
-    leaderBoard: Leaderboard,
-  };
+export enum TimeControl {
+  blitz,
+    rapid,
+    survival,
+}
+export enum GameMode {
+  Puzzles,
+    Duel,
+    Tournament,
+}
+
+export interface AppState {
+  puzzle: Puzzle | null;
+  leaderboard: Leaderboard;
+  timeControl: TimeControl;
+  gameMode: GameMode;
+}
 
 export interface User {
   handle: string;
@@ -24,10 +34,11 @@ export interface Puzzle {
 }
 
 export interface Leaderboard {
-  board: Placement[];
+  placements: Placement[];
 }
 
 export interface Placement {
   handle: string;
   score: number;
+  high_score: number;
 }

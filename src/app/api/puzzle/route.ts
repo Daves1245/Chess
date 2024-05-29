@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { Puzzle } from '@/types';
 
 const prisma = new PrismaClient();
 
@@ -18,11 +19,12 @@ export async function GET() {
   }
 }
 
-export const getRandomPuzzle = async () => {
-  const ret = await prisma.$queryRaw`
+// Helper function, not exported as a route handler
+async function getRandomPuzzle() {
+  const ret = await prisma.$queryRaw<Puzzle[]>`
     SELECT * FROM "puzzles" ORDER BY RANDOM() LIMIT 1;
   `;
 
   console.log('Returning:', ret[0]);
   return ret[0];
-};
+}
